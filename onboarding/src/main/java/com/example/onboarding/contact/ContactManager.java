@@ -25,6 +25,35 @@ public class ContactManager {
         return contact;
     }
 
+    // Find contact by name using Optional(handles case hwere name doesn't exist)
+    public Optional <Contact>findContactByName(String name){
+        Objects.requireNonNull(name,"Name cannot be null");
+        return contactStore.values().stream()
+                .filter(contact -> contact.name().equalsIgnoreCase(name))
+                .findFirst();
+    }
+
+    //Filter contact by domain/email suffix using stream.
+    public List<Contact>findContactByEmailDomain(String domain){
+        Objects.requireNonNull(domain,"Domain cannot be null");
+        return contactStore.values().stream()
+                .filter(contact -> contact.email().endsWith(domain))
+                .toList();
+    }
+
+    //Search contact match a query string in email or name
+    public List<Contact>searchContacts(String keyword){
+        if (keyword == null || keyword.isBlank()){
+            return List.of();
+        }
+        String lowerKeyword = keyword.toLowerCase();
+        return contactStore.values().stream()
+                .filter(c -> c.name().toLowerCase().contains(lowerKeyword) ||
+                        c.email().toLowerCase().contains(lowerKeyword))
+                .toList();
+    }
+
+
 
     // Retrieve all contacts as an unmodifiable list
     public List<Contact> getAllContacts() {
