@@ -61,7 +61,25 @@ Temporal Data & Enums: Used java.time.LocalDate for date-range filtering and Exp
 
 Aggregation: Computed total expenses and category-wise breakdowns using Stream reduction.
 
-📌 Week 2 (Day 9): Maven Lifecycle, Packaging & Logging
+ Week 2 (Day 9): Maven Lifecycle, Packaging & Logging
 Enterprise Logging: Replaced console prints with SLF4J Logger (log.info, log.warn, log.error) across business managers.
 
 Build & Packaging: Executed Maven lifecycle commands (./mvnw clean test package) and verified executable .jar artifact generation under the target/ directory.
+
+Week 2 (Day 10): Java Review, Exceptions, Debugging & Tooling
+Debugging & Tooling: Mastered IDE-based debugging, Maven dependency management, and bytecode/JDK configuration resolving Java 21 compilation targets.
+
+Week 3 (Days 11–12): Spring Boot Bootstrapping & REST APIs
+Spring Boot Bootstrapping: Configured Spring Boot 3.3.0 application lifecycle and embedded server setup (OnboardingApplication.java).
+
+System Health Diagnostics: Implemented HealthController (/api/health) to monitor application availability.
+
+In-Memory Tasks API (TaskController):
+
+@RestController & @RequestMapping("/api/tasks") configuration.
+
+GET /api/tasks: List all tasks with optional query parameter filtering (?completed=true/false).
+
+GET /api/tasks/{id}: Retrieve specific tasks using @PathVariable.
+
+POST /api/tasks: Create tasks using @RequestBody mapping to immutable Task records.
