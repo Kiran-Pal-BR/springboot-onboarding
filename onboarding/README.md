@@ -83,3 +83,40 @@ GET /api/tasks: List all tasks with optional query parameter filtering (?complet
 GET /api/tasks/{id}: Retrieve specific tasks using @PathVariable.
 
 POST /api/tasks: Create tasks using @RequestBody mapping to immutable Task records.
+
+
+
+Day 13: Domain Models & Basic CRUD
+Setup project structure and domain records.
+
+Implemented in-memory thread-safe storage using ConcurrentHashMap.
+
+Initialized basic GET (with query parameter filtering) and POST endpoints.
+
+Day 14: Full CRUD & HTTP Status Codes
+Implemented PUT (full update) and DELETE (removal) operations.
+
+Developed a flexible PATCH partial update mechanism supporting title, description, and completed fields via a dynamic Map<String, Object> request body.
+
+Configured precise HTTP status codes (201 Created, 204 No Content, 400 Bad Request, 404 Not Found).
+
+Day 15: Production-Ready Error Handling & Configuration
+Migrated configuration from application.properties to hierarchical application.yml.
+
+Implemented centralized exception handling using @RestControllerAdvice to catch validation errors and unexpected exceptions globally.
+
+Standardized error responses using a consistent ErrorResponseDto payload (timestamp, status, error, message, path).
+# Task Management Onboarding API (Spring Boot 3.3.0)
+
+###########################################################################################################
+
+## 🚀 API Endpoints
+
+| Method | Endpoint | Description | Status Codes |
+| :--- | :--- | :--- | :--- |
+| **GET** | `/api/tasks` | Get all tasks (Supports `?completed=true/false` filter) | `200 OK` |
+| **GET** | `/api/tasks/{id}` | Get task by UUID | `200 OK`, `404 Not Found` |
+| **POST** | `/api/tasks` | Create a new task (Validated via `@Valid`) | `201 Created`, `400 Bad Request` |
+| **PUT** | `/api/tasks/{id}` | Fully update an existing task | `200 OK`, `400 Bad Request`, `404 Not Found` |
+| **PATCH** | `/api/tasks/{id}` | Partially update task fields (`title`, `description`, `completed`) | `200 OK`, `400 Bad Request`, `404 Not Found` |
+| **DELETE**| `/api/tasks/{id}` | Delete a task by ID | `204 No Content`, `404 Not Found` |
