@@ -52,23 +52,61 @@ public class TaskService {
     }
 
     // 4. Update Task Status (Patch)
-    public Optional<TaskResponseDto> updateTaskStatus(String id, boolean completed) {
-        log.info("Service: Updating task status for ID: {} to {}", id, completed);
+    public Optional<TaskResponseDto> patchTask(String id, Map<String, Object> updates) {
+        log.info("Service: Patching task ID: {}", id);
 
         Task existingTask = taskStore.get(id);
         if (existingTask == null) {
             return Optional.empty();
         }
 
+        // Extract values safely from the map
+        String newTitle = (String) updates.get("title");
+        String newDescription = (String) updates.get("description");
+        Boolean completedObj = (Boolean) updates.get("completed");
+
+        // Determine updated values (keep existing if field not provided)
+        String updatedTitle = (newTitle != null) ? newTitle : existingTask.title();
+        String updatedDescription = (newDescription != null) ? newDescription : existingTask.description();
+
+        boolean updatedCompleted = existingTask.completed();
+        if (completedObj != null) {
+            updatedCompleted = completedObj;
+        }
+
         Task updatedTask = new Task(
                 existingTask.id(),
-                existingTask.title(),
-                existingTask.description(),
-                completed
+                updatedTitle,
+                updatedDescription,
+                updatedCompleted
         );
 
         taskStore.put(id, updatedTask);
         return Optional.of(mapToResponseDto(updatedTask));
+    }
+
+    // 5 For the full update (PUT)
+    public Optional<TaskResponseDto> updateTaskFull(String id, com.example.onboarding.task.dto.TaskUpdateRequestDto requestDto){
+        log.info("Service: Fully updating task ID: {}", id);
+
+        Task existingTask  = taskStore.get(id);
+        if(existingTask == null){
+            return Optional.empty();
+        }
+        Task updatedTask = new Task(
+                id,
+                requestDto.title(),
+                requestDto.description(),
+                requestDto.completed()
+        );
+        taskStore.put(id, updatedTask);
+        return Optional.of(mapToResponseDto(updatedTask));
+    }
+
+    //Delete the task
+    public boolean deleteTask(String id){
+        log.info("Service : Deleting task ID: {} ",id);
+        return taskStore.remove(id)!=null;
     }
 
     // Helper method to convert Entity -> DTO

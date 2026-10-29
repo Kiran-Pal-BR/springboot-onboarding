@@ -3,14 +3,17 @@ package com.example.onboarding.controller;
 import com.example.onboarding.task.TaskService;
 import com.example.onboarding.task.dto.TaskCreateRequestDto;
 import com.example.onboarding.task.dto.TaskResponseDto;
+import com.example.onboarding.task.dto.TaskUpdateRequestDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/tasks")
@@ -40,26 +43,46 @@ public class TaskController {
     }
 
     @PostMapping
-    public ResponseEntity<TaskResponseDto> createTask(@RequestBody TaskCreateRequestDto requestDto) {
+    public ResponseEntity<TaskResponseDto> createTask(@Valid @RequestBody TaskCreateRequestDto requestDto) {
         log.info("Controller: POST /api/tasks called");
         TaskResponseDto createdTask = taskService.createTask(requestDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdTask);
     }
 
-    @PatchMapping("/{id}")
-    public ResponseEntity<TaskResponseDto> updateTaskStatus(
+    @PutMapping("/{id}")
+    public ResponseEntity<TaskResponseDto> updateTaskFull(
             @PathVariable String id,
-            @RequestBody Map<String, Boolean> updates
+            @Valid @RequestBody TaskUpdateRequestDto requestDto
+    ){
+        log.info("Controller : PUT /api/tasks/{} called",id);
+        return taskService.updateTaskFull(id,requestDto)
+                .map(ResponseEntity::ok)
+                .orElseGet(()-> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+    }
+
+    @PatchMapping("/{id}")
+    public ResponseEntity<TaskResponseDto> patchTask(
+            @PathVariable String id,
+            @RequestBody Map<String, Object> updates
     ) {
         log.info("Controller: PATCH /api/tasks/{} called", id);
 
-        Boolean completed = updates.get("completed");
-        if (completed == null) {
+        if (updates == null || updates.isEmpty()) {
             return ResponseEntity.badRequest().build();
         }
 
-        return taskService.updateTaskStatus(id, completed)
+        return taskService.patchTask(id, updates)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void>deleteTask(@PathVariable String id){
+        log.info("Controller: DELETE /api/tasks/{} called ",id );
+        boolean deleted = taskService.deleteTask(id);
+        if(!deleted){
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+        return ResponseEntity.noContent().build();
     }
 }
