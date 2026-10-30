@@ -108,6 +108,20 @@ Implemented centralized exception handling using @RestControllerAdvice to catch 
 Standardized error responses using a consistent ErrorResponseDto payload (timestamp, status, error, message, path).
 # Task Management Onboarding API (Spring Boot 3.3.0)
 
+
+Day 16: Refactoring to Layered Architecture & DTOs
+
+Structured the project into standard architectural layers: Controller, Service, Repository, and DTOs.
+
+Implemented Bean Validation (@Valid, @NotBlank) on input records (TaskCreateRequestDto, TaskUpdateRequestDto).
+
+Decoupled internal data models from client-facing responses using TaskResponseDto.
+
+
+
+
+
+
 ###########################################################################################################
 
 ## 🚀 API Endpoints
