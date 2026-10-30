@@ -6,6 +6,9 @@ public record TaskCreateRequestDto (
         @NotBlank(message =  "Task title cannot be blank")
         @Size(min = 3 , max = 100, message = "Title must be between 3 and 100 characters" )
         String title,
-        String description
+        String description,
+
+        @NotBlank(message = "Project ID is required")
+        String projectId
 ){}
 

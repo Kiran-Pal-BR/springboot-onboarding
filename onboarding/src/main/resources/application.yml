@@ -5,6 +5,20 @@ spring:
   application:
     name: task-onboarding-api
 
+  datasource:
+    url: jdbc:postgresql://localhost:5432/task_db
+    username: postgres
+    password: Kiran@7506
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
 logging:
   level:
     root: INFO

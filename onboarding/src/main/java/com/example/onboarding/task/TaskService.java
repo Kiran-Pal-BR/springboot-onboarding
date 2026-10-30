@@ -1,121 +1,136 @@
 package com.example.onboarding.task;
 
+import com.example.onboarding.project.Project;
+import com.example.onboarding.project.ProjectRepository;
 import com.example.onboarding.task.dto.TaskCreateRequestDto;
 import com.example.onboarding.task.dto.TaskResponseDto;
+import com.example.onboarding.task.dto.TaskUpdateRequestDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 @Service
 public class TaskService {
 
     private static final Logger log = LoggerFactory.getLogger(TaskService.class);
 
-    // In-memory thread-safe store
-    private final Map<String, Task> taskStore = new ConcurrentHashMap<>();
+    private final TaskRepository taskRepository;
+    private final ProjectRepository projectRepository;
+
+    // Constructor Injection for Spring Data Repositories
+    public TaskService(TaskRepository taskRepository, ProjectRepository projectRepository) {
+        this.taskRepository = taskRepository;
+        this.projectRepository = projectRepository;
+    }
 
     // 1. Get All Tasks (with optional filter & mapping to DTO)
     public List<TaskResponseDto> getAllTasks(Boolean completed) {
-        log.info("Service: Fetching all tasks. Filter completed: {}", completed);
+        log.info("Service: Fetching all tasks from database. Filter completed: {}", completed);
 
-        Collection<Task> tasks = taskStore.values();
+        List<Task> tasks = taskRepository.findAll();
+
         return tasks.stream()
-                .filter(task -> completed == null || task.completed() == completed)
+                .filter(task -> completed == null || task.isCompleted() == completed)
                 .map(this::mapToResponseDto)
-                .toList();
+                .collect(Collectors.toList());
     }
 
     // 2. Get Task By ID
     public Optional<TaskResponseDto> getTaskById(String id) {
         log.info("Service: Fetching task by ID: {}", id);
-        Task task = taskStore.get(id);
-        if (task == null) {
-            return Optional.empty();
-        }
-        return Optional.of(mapToResponseDto(task));
+        return taskRepository.findById(id)
+                .map(this::mapToResponseDto);
     }
 
-    // 3. Create Task
+    // 3. Create Task (Linked with a Project)
     public TaskResponseDto createTask(TaskCreateRequestDto requestDto) {
         log.info("Service: Creating new task with title: {}", requestDto.title());
 
-        String id = UUID.randomUUID().toString();
-        Task newTask = new Task(id, requestDto.title(), requestDto.description(), false);
+        // Ensure Project exists before creating task
+        Project project = projectRepository.findById(requestDto.projectId())
+                .orElseThrow(() -> new RuntimeException("Project not found with id: " + requestDto.projectId()));
 
-        taskStore.put(id, newTask);
+        String id = UUID.randomUUID().toString();
+        Task newTask = new Task(
+                id,
+                requestDto.title(),
+                requestDto.description(),
+                false,
+                project
+        );
+
+        Task savedTask = taskRepository.save(newTask);
         log.info("Service: Successfully created task with ID: {}", id);
 
-        return mapToResponseDto(newTask);
+        return mapToResponseDto(savedTask);
     }
 
     // 4. Update Task Status (Patch)
     public Optional<TaskResponseDto> patchTask(String id, Map<String, Object> updates) {
         log.info("Service: Patching task ID: {}", id);
 
-        Task existingTask = taskStore.get(id);
-        if (existingTask == null) {
+        Optional<Task> optionalTask = taskRepository.findById(id);
+        if (optionalTask.isEmpty()) {
             return Optional.empty();
         }
+
+        Task existingTask = optionalTask.get();
 
         // Extract values safely from the map
         String newTitle = (String) updates.get("title");
         String newDescription = (String) updates.get("description");
         Boolean completedObj = (Boolean) updates.get("completed");
 
-        // Determine updated values (keep existing if field not provided)
-        String updatedTitle = (newTitle != null) ? newTitle : existingTask.title();
-        String updatedDescription = (newDescription != null) ? newDescription : existingTask.description();
+        // Update fields if present in map
+        if (newTitle != null) existingTask.setTitle(newTitle);
+        if (newDescription != null) existingTask.setDescription(newDescription);
+        if (completedObj != null) existingTask.setCompleted(completedObj);
 
-        boolean updatedCompleted = existingTask.completed();
-        if (completedObj != null) {
-            updatedCompleted = completedObj;
-        }
-
-        Task updatedTask = new Task(
-                existingTask.id(),
-                updatedTitle,
-                updatedDescription,
-                updatedCompleted
-        );
-
-        taskStore.put(id, updatedTask);
+        Task updatedTask = taskRepository.save(existingTask);
         return Optional.of(mapToResponseDto(updatedTask));
     }
 
-    // 5 For the full update (PUT)
-    public Optional<TaskResponseDto> updateTaskFull(String id, com.example.onboarding.task.dto.TaskUpdateRequestDto requestDto){
+    // 5. Full update (PUT)
+    public Optional<TaskResponseDto> updateTaskFull(String id, TaskUpdateRequestDto requestDto) {
         log.info("Service: Fully updating task ID: {}", id);
 
-        Task existingTask  = taskStore.get(id);
-        if(existingTask == null){
+        Optional<Task> optionalTask = taskRepository.findById(id);
+        if (optionalTask.isEmpty()) {
             return Optional.empty();
         }
-        Task updatedTask = new Task(
-                id,
-                requestDto.title(),
-                requestDto.description(),
-                requestDto.completed()
-        );
-        taskStore.put(id, updatedTask);
+
+        Task existingTask = optionalTask.get();
+        existingTask.setTitle(requestDto.title());
+        existingTask.setDescription(requestDto.description());
+        existingTask.setCompleted(requestDto.completed());
+
+        Task updatedTask = taskRepository.save(existingTask);
         return Optional.of(mapToResponseDto(updatedTask));
     }
 
-    //Delete the task
-    public boolean deleteTask(String id){
-        log.info("Service : Deleting task ID: {} ",id);
-        return taskStore.remove(id)!=null;
+    // 6. Delete the task
+    public boolean deleteTask(String id) {
+        log.info("Service: Deleting task ID: {}", id);
+        if (taskRepository.existsById(id)) {
+            taskRepository.deleteById(id);
+            return true;
+        }
+        return false;
     }
 
-    // Helper method to convert Entity -> DTO
+    // Helper method to convert Entity -> DTO (Handling project association safely)
     private TaskResponseDto mapToResponseDto(Task task) {
+        String projectId = (task.getProject() != null) ? task.getProject().getId() : null;
+
         return new TaskResponseDto(
-                task.id(),
-                task.title(),
-                task.description(),
-                task.completed()
+                task.getId(),
+                task.getTitle(),
+                task.getDescription(),
+                task.isCompleted()
+                // Agar aapke TaskResponseDto mein projectId bhi hai, toh yahan pass kar sakte hain
         );
     }
 }
