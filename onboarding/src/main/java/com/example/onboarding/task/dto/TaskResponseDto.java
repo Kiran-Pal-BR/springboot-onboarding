@@ -4,5 +4,6 @@ public record TaskResponseDto(
         String id,
         String title,
         String description,
-        boolean completed
+        boolean completed,
+        String projectId
 ) {}

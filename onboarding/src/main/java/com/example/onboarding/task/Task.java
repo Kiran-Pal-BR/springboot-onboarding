@@ -14,6 +14,7 @@ import java.util.Objects;
 public class Task {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
     @Column(nullable = false, length=100)
@@ -42,8 +43,8 @@ public class Task {
 
     public Task() {}
 
-    public Task(String id, String title, String description, Boolean completed, Project project){
-        this.id = id;
+    public Task( String title, String description, Boolean completed, Project project){
+
         this.title = title;
         this.description = description;
         this.completed = completed;

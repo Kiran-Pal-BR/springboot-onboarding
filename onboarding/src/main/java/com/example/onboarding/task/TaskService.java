@@ -5,6 +5,7 @@ import com.example.onboarding.project.ProjectRepository;
 import com.example.onboarding.task.dto.TaskCreateRequestDto;
 import com.example.onboarding.task.dto.TaskResponseDto;
 import com.example.onboarding.task.dto.TaskUpdateRequestDto;
+import com.example.onboarding.exception.ProjectNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -45,17 +46,37 @@ public class TaskService {
                 .map(this::mapToResponseDto);
     }
 
-    // 3. Create Task (Linked with a Project)
+    //3. Get task by filter
+    public List<TaskResponseDto>getTaskByFilter(Boolean completed, String projectId ){
+        log.info("Service: fetch tasks  with filters - completed: {},projectId:{}",completed,projectId);
+
+        List<Task> tasks;
+        if(projectId != null && completed != null){
+            tasks = taskRepository.findByProjectId(projectId).stream()
+                    .filter(t -> t.isCompleted() == completed)
+                    .toList();
+        }else if(projectId !=null){
+            tasks = taskRepository.findByProjectId(projectId);
+        }else if(completed != null){
+            tasks = taskRepository.findByCompleted(completed);
+        }else{
+            tasks = taskRepository.findAll();
+        }
+        return tasks.stream()
+                .map(this::mapToResponseDto)
+                .collect(Collectors.toList());
+    }
+
+    // 4. Create Task (Linked with a Project)
     public TaskResponseDto createTask(TaskCreateRequestDto requestDto) {
         log.info("Service: Creating new task with title: {}", requestDto.title());
 
-        // Ensure Project exists before creating task
-        Project project = projectRepository.findById(requestDto.projectId())
-                .orElseThrow(() -> new RuntimeException("Project not found with id: " + requestDto.projectId()));
 
-        String id = UUID.randomUUID().toString();
+        Project project = projectRepository.findById(requestDto.projectId())
+                .orElseThrow(() -> new ProjectNotFoundException("Project not found with id: " + requestDto.projectId()));
+
+
         Task newTask = new Task(
-                id,
                 requestDto.title(),
                 requestDto.description(),
                 false,
@@ -63,12 +84,12 @@ public class TaskService {
         );
 
         Task savedTask = taskRepository.save(newTask);
-        log.info("Service: Successfully created task with ID: {}", id);
+        log.info("Service: Successfully created task with ID: {}", savedTask.getId());
 
         return mapToResponseDto(savedTask);
     }
 
-    // 4. Update Task Status (Patch)
+    // 5. Update Task Status (Patch)
     public Optional<TaskResponseDto> patchTask(String id, Map<String, Object> updates) {
         log.info("Service: Patching task ID: {}", id);
 
@@ -93,7 +114,7 @@ public class TaskService {
         return Optional.of(mapToResponseDto(updatedTask));
     }
 
-    // 5. Full update (PUT)
+    // 6. Full update (PUT)
     public Optional<TaskResponseDto> updateTaskFull(String id, TaskUpdateRequestDto requestDto) {
         log.info("Service: Fully updating task ID: {}", id);
 
@@ -111,7 +132,7 @@ public class TaskService {
         return Optional.of(mapToResponseDto(updatedTask));
     }
 
-    // 6. Delete the task
+    // 7. Delete the task
     public boolean deleteTask(String id) {
         log.info("Service: Deleting task ID: {}", id);
         if (taskRepository.existsById(id)) {
@@ -129,7 +150,8 @@ public class TaskService {
                 task.getId(),
                 task.getTitle(),
                 task.getDescription(),
-                task.isCompleted()
+                task.isCompleted(),
+                projectId
 
         );
     }

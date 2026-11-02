@@ -9,10 +9,10 @@ import java.util.List;
 @Entity
 @Table(name = "projects")
 
-
 public class Project {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
     @Column(nullable = false, length=100)

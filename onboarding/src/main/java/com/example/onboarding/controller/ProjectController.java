@@ -1,7 +1,12 @@
 package com.example.onboarding.controller;
 
-import com.example.onboarding.project.Project;
-import com.example.onboarding.project.ProjectRepository;
+import com.example.onboarding.project.ProjectService;
+import com.example.onboarding.project.dto.ProjectCreateRequestDto;
+import com.example.onboarding.project.dto.ProjectResponseDto;
+import com.example.onboarding.project.dto.ProjectUpdateRequestDto;
+
+import jakarta.validation.Valid;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -16,44 +21,55 @@ public class ProjectController {
 
     private static final Logger log = LoggerFactory.getLogger(ProjectController.class);
 
-    private final ProjectRepository projectRepository;
+    private final ProjectService projectService;
 
-    public ProjectController(ProjectRepository projectRepository) {
-        this.projectRepository = projectRepository;
+    public ProjectController(ProjectService projectService) {
+        this.projectService = projectService;
     }
 
     // 1. Get all projects
     @GetMapping
-    public List<Project> getAllProjects() {
+    public List<ProjectResponseDto> getAllProjects() {
         log.info("Controller: GET /api/projects called");
-        return projectRepository.findAll();
+        return projectService.getAllProjects();
     }
 
     // 2. Create a project
     @PostMapping
-    public ResponseEntity<Project> createProject(@RequestBody Project project) {
+    public ResponseEntity<ProjectResponseDto> createProject(@RequestBody ProjectCreateRequestDto requestDto) {
         log.info("Controller: POST /api/projects called");
-        Project savedProject = projectRepository.save(project);
+        ProjectResponseDto savedProject = projectService.createProject(requestDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(savedProject);
     }
 
     // 3. Get project by ID
     @GetMapping("/{id}")
-    public ResponseEntity<Project> getProjectById(@PathVariable String id) {
+    public ResponseEntity<ProjectResponseDto> getProjectById(@PathVariable String id) {
         log.info("Controller: GET /api/projects/{} called", id);
-        return projectRepository.findById(id)
+        return projectService.getProjectById(id)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
     }
 
-    // 4. Delete project
+    //4. Update Project
+    @PutMapping("/{id}")
+    public ResponseEntity<ProjectResponseDto>updateProject(@PathVariable String id, @Valid @RequestBody ProjectUpdateRequestDto requestDto){
+        log.info("Controller: GET/api/projects{} called",id );
+        return projectService.updateProject(id, requestDto)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build() );
+    }
+
+
+    // 5. Delete project
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteProject(@PathVariable String id) {
         log.info("Controller: DELETE /api/projects/{} called", id);
-        if (!projectRepository.existsById(id)) {
+        boolean deleted = projectService.deleteProject(id);
+        if (!deleted) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
-        projectRepository.deleteById(id);
+
         return ResponseEntity.noContent().build();
     }
 }

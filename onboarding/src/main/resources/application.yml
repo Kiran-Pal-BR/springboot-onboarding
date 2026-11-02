@@ -8,7 +8,7 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/task_db
     username: postgres
-    password: Kiran@7506
+    password: ${DB_PASSWORD}
 
   jpa:
     hibernate:
