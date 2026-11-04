@@ -1,37 +1,34 @@
 package com.example.onboarding.controller;
-
 import com.example.onboarding.project.ProjectService;
 import com.example.onboarding.project.dto.ProjectCreateRequestDto;
 import com.example.onboarding.project.dto.ProjectResponseDto;
 import com.example.onboarding.project.dto.ProjectUpdateRequestDto;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import jakarta.validation.Valid;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+
 
 @RestController
 @RequestMapping("/api/projects")
 public class ProjectController {
-
     private static final Logger log = LoggerFactory.getLogger(ProjectController.class);
-
     private final ProjectService projectService;
-
     public ProjectController(ProjectService projectService) {
         this.projectService = projectService;
     }
 
     // 1. Get all projects
     @GetMapping
-    public List<ProjectResponseDto> getAllProjects() {
-        log.info("Controller: GET /api/projects called");
-        return projectService.getAllProjects();
+    public ResponseEntity<Page<ProjectResponseDto>> getAllProjects(Pageable pageable) {
+        log.info("Controller: GET /api/projects called with pagination");
+        Page<ProjectResponseDto> projects = projectService.getAllProjects(pageable);
+        return ResponseEntity.ok(projects);
     }
 
     // 2. Create a project
@@ -71,5 +68,12 @@ public class ProjectController {
         }
 
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/test-rollback")
+    public ResponseEntity<Void> testRollback() {
+        log.info("Controller: POST /api/projects/test-rollback called");
+        projectService.performProjectRollbackTest();
+        return ResponseEntity.ok().build();
     }
 }

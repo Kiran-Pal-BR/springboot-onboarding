@@ -7,11 +7,10 @@ import com.example.onboarding.task.dto.TaskUpdateRequestDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import java.util.Map;
 import jakarta.validation.Valid;
 
@@ -28,10 +27,13 @@ public class TaskController {
         this.taskService = taskService;
     }
 
+
     @GetMapping
-    public List<TaskResponseDto> getAllTasks(@RequestParam(required = false) Boolean completed) {
-        log.info("Controller: GET /api/tasks called");
-        return taskService.getAllTasks(completed);
+    public ResponseEntity<Page<TaskResponseDto>> getAllTasks(
+            @RequestParam(required = false) Boolean completed,
+            Pageable pageable) {
+        Page<TaskResponseDto> tasks = taskService.getAllTasks(completed, pageable);
+        return ResponseEntity.ok(tasks);
     }
 
     @GetMapping("/{id}")
@@ -74,6 +76,12 @@ public class TaskController {
         return taskService.patchTask(id, updates)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+    }
+    @PostMapping("/test-rollback")
+    public ResponseEntity<Void> testRollback() {
+        log.info("Controller: POST /api/tasks/test-rollback called");
+        taskService.performBulkOperationWithRollBack();
+        return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/{id}")

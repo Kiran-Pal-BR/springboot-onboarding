@@ -16,5 +16,7 @@ public interface ProjectRepository extends JpaRepository<Project, String>{
     @Query("SELECT DISTINCT p FROM Project p LEFT JOIN FETCH p.tasks")
     List<Project>findAllWithTasks();
 
+    boolean existsByName(String name);
+
 
 }

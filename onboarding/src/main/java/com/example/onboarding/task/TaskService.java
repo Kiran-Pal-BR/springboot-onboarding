@@ -1,7 +1,11 @@
 package com.example.onboarding.task;
 
+import com.example.onboarding.exception.DuplicateResourceException;
 import com.example.onboarding.project.Project;
 import com.example.onboarding.project.ProjectRepository;
+import com.example.onboarding.task.TaskRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import com.example.onboarding.task.dto.TaskCreateRequestDto;
 import com.example.onboarding.task.dto.TaskResponseDto;
 import com.example.onboarding.task.dto.TaskUpdateRequestDto;
@@ -9,9 +13,12 @@ import com.example.onboarding.exception.ProjectNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-
 import java.util.*;
 import java.util.stream.Collectors;
+import org.springframework.transaction.annotation.Transactional;
+
+
+
 
 @Service
 public class TaskService {
@@ -28,15 +35,16 @@ public class TaskService {
     }
 
     // 1. Get All Tasks (with optional filter & mapping to DTO)
-    public List<TaskResponseDto> getAllTasks(Boolean completed) {
-        log.info("Service: Fetching all tasks from database. Filter completed: {}", completed);
+    public Page<TaskResponseDto> getAllTasks(Boolean completed, Pageable pageable) {
+        log.info("Service: Fetching paginated tasks from database. Filter completed: {}", completed);
 
-        List<Task> tasks = taskRepository.findAll();
+        if(completed != null){
+            return taskRepository.findByCompleted(completed, pageable)
+                    .map(this::mapToResponseDto);
+        }
 
-        return tasks.stream()
-                .filter(task -> completed == null || task.isCompleted() == completed)
-                .map(this::mapToResponseDto)
-                .collect(Collectors.toList());
+        return taskRepository.findAll(pageable)
+                .map(this::mapToResponseDto);
     }
 
     // 2. Get Task By ID
@@ -71,7 +79,10 @@ public class TaskService {
     public TaskResponseDto createTask(TaskCreateRequestDto requestDto) {
         log.info("Service: Creating new task with title: {}", requestDto.title());
 
-
+        // Checking for duplicate title:
+        if (taskRepository.existsByTitle(requestDto.title())){
+            throw new DuplicateResourceException("Task with title '" + requestDto.title() + "' already exists.");
+        }
         Project project = projectRepository.findById(requestDto.projectId())
                 .orElseThrow(() -> new ProjectNotFoundException("Project not found with id: " + requestDto.projectId()));
 
@@ -142,6 +153,22 @@ public class TaskService {
         return false;
     }
 
+
+    @Transactional
+    public void performBulkOperationWithRollBack(){
+        log.info("Starting transactional bulk operation..");
+
+        //Saving one task successfully
+        Task newTask = new Task ("Sample Task for Rollback","Description",false , null);
+        taskRepository.save(newTask);
+
+        //Simulating failure
+        boolean simulateError = true;
+        if(simulateError){
+            throw new RuntimeException("Simulated failure! Transaction must roll back" );
+        }
+    }
+
     // Helper method to convert Entity -> DTO (Handling project association safely)
     private TaskResponseDto mapToResponseDto(Task task) {
         String projectId = (task.getProject() != null) ? task.getProject().getId() : null;
@@ -155,4 +182,6 @@ public class TaskService {
 
         );
     }
+
+
 }
