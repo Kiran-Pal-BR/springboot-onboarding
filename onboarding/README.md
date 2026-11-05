@@ -172,6 +172,17 @@ Week 5 (Day 21): Testing pyramid; pure unit tests; Mockito and JUnit.
 
 
 
+Week 5 (Day 22): PI tests for statuses and validation; reproducible DB integration test.
+1) Web Layer Tests(Controllers) : 
+- Implemented 'ProjectControllerTest' and 'TaskControllerTest' using '@WebMvcTest'
+- Verified HTTP request mappings, request/response validation, and JSON serialization/deserialization.
+
+2) Database Intergration Tests (Repositories) : 
+- Created `ProjectRepositoryTest` and `TaskRepositoryTest` using `@DataJpaTest` and `TestEntityManager`.
+- Tested custom JPA queries (such as `findByIdWithTasks` and `findAllWithTasks`) designed to prevent **N+1 query problems**.
+- Validated pagination support (`Page<Task>`) and custom lookup queries (`existsByName`, `existsByTitle`).
+
+
 
 ###########################################################################################################
 
